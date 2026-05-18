@@ -267,12 +267,13 @@
 <script>
   // Populate year dropdown
   const yearSel = document.getElementById('year');
+  const anyYearOpt = document.createElement('option');
+  anyYearOpt.value = ''; anyYearOpt.textContent = 'Any Year';
+  yearSel.appendChild(anyYearOpt);
   const currentYear = new Date().getFullYear();
   for (let y = currentYear + 1; y >= 1980; y--) {
     const o = document.createElement('option');
-    o.value = y;
-    o.textContent = y;
-    if (y === currentYear) o.selected = true;
+    o.value = y; o.textContent = y;
     yearSel.appendChild(o);
   }
 
@@ -284,10 +285,12 @@
     'Porsche','Ram','Rivian','Subaru','Tesla','Toyota','Volkswagen','Volvo'
   ];
   const makeSel = document.getElementById('make');
+  const anyMakeOpt = document.createElement('option');
+  anyMakeOpt.value = ''; anyMakeOpt.textContent = 'Any Make';
+  makeSel.appendChild(anyMakeOpt);
   MAKES.forEach(m => {
     const o = document.createElement('option');
-    o.value = m;
-    o.textContent = m;
+    o.value = m; o.textContent = m;
     makeSel.appendChild(o);
   });
 
@@ -299,29 +302,42 @@
   let currentLinks = [];
 
   function buildLinks(year, make, model, maxPrice) {
-    const q = encodeURIComponent(`${year} ${make} ${model}`);
-    const makeSlug = make.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    // Build keyword query from whichever fields are set
+    const parts = [year, make, model].filter(Boolean);
+    const q = encodeURIComponent(parts.join(' '));
+    const makeSlug = make ? make.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') : '';
     const modelSlug = model.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
     const p = maxPrice ? parseInt(maxPrice) : null;
+
+    // Year range params — omitted when Any Year selected
+    const atYearParam   = year ? `&startYear=${year}&endYear=${year}` : '';
+    const carsYearParam = year ? `&year_min=${year}&year_max=${year}` : '';
+    const cgYearParam   = year ? `;minYear=${year};maxYear=${year}` : '';
+    const clYearParam   = year ? `&min_auto_year=${year}&max_auto_year=${year}` : '';
+
+    // CarGurus / Carvana / TrueCar work best with make+model slugs; fall back to keyword search
+    const cgBase   = (make && model) ? `https://www.cargurus.com/Cars/new/nl_${makeSlug}_${modelSlug}#listing=searchResults;zip=31632;distance=200` + cgYearParam + (p ? `;maxPrice=${p}` : '') : `https://www.cargurus.com/Cars/new/nl_used-cars#listing=searchResults;zip=31632;distance=200;query=${q}` + (p ? `;maxPrice=${p}` : '');
+    const cvBase   = (make && model) ? `https://www.carvana.com/cars/${makeSlug}/${modelSlug}?${year ? `year[]=${year}&` : ''}${p ? `price[max]=${p}` : ''}` : `https://www.carvana.com/cars?search=${q}${p ? `&price[max]=${p}` : ''}`;
+    const tcBase   = (make && model) ? `https://www.truecar.com/used-cars-for-sale/listings/${makeSlug}/${modelSlug}/?${year ? `year[]=${year}&` : ''}${p ? `price_max=${p}` : ''}` : `https://www.truecar.com/used-cars-for-sale/listings/?search[query]=${q}${p ? `&search[price_to]=${p}` : ''}`;
 
     return [
       {
         name: 'AutoTrader',
         type: 'New & Used',
         icon: '🚗',
-        url: `https://www.autotrader.com/cars-for-sale/all-cars/${makeSlug}/${modelSlug}/?startYear=${year}&endYear=${year}` + (p ? `&maxPrice=${p}` : '')
+        url: `https://www.autotrader.com/cars-for-sale/all-cars/${makeSlug}/${modelSlug}/?${atYearParam}` + (p ? `&maxPrice=${p}` : '')
       },
       {
         name: 'Cars.com',
         type: 'New & Used',
         icon: '🔍',
-        url: `https://www.cars.com/shopping/results/?keyword=${q}&year_min=${year}&year_max=${year}` + (p ? `&price_max=${p}` : '')
+        url: `https://www.cars.com/shopping/results/?keyword=${q}${carsYearParam}` + (p ? `&price_max=${p}` : '')
       },
       {
         name: 'CarGurus',
         type: 'New & Used',
         icon: '📊',
-        url: `https://www.cargurus.com/Cars/new/nl_${makeSlug}_${modelSlug}#listing=searchResults;zip=31632;distance=200;selectedEntity=d2417;minYear=${year};maxYear=${year}` + (p ? `;maxPrice=${p}` : '')
+        url: cgBase
       },
       {
         name: 'eBay Motors',
@@ -339,13 +355,13 @@
         name: 'Carvana',
         type: 'Online Used',
         icon: '🌐',
-        url: `https://www.carvana.com/cars/${makeSlug}/${modelSlug}?year[]=${year}` + (p ? `&price[max]=${p}` : '')
+        url: cvBase
       },
       {
         name: 'TrueCar',
         type: 'New & Used',
         icon: '✅',
-        url: `https://www.truecar.com/used-cars-for-sale/listings/${makeSlug}/${modelSlug}/?year[]=${year}` + (p ? `&price_max=${p}` : '')
+        url: tcBase
       },
       {
         name: 'Facebook Marketplace',
@@ -357,7 +373,7 @@
         name: 'Craigslist',
         type: 'Private Party',
         icon: '📋',
-        url: `https://www.craigslist.org/search/cta?query=${q}&auto_make_model=${encodeURIComponent(`${make} ${model}`)}&min_auto_year=${year}&max_auto_year=${year}` + (p ? `&max_price=${p}` : '')
+        url: `https://www.craigslist.org/search/cta?query=${q}${make ? `&auto_make_model=${encodeURIComponent(make + (model ? ' ' + model : ''))}` : ''}${clYearParam}` + (p ? `&max_price=${p}` : '')
       },
       {
         name: 'Hemmings',
@@ -374,14 +390,17 @@
     const model    = document.getElementById('model').value.trim();
     const maxPrice = document.getElementById('maxprice').value;
 
-    if (!model) {
+    if (!year && !make && !model) {
       document.getElementById('model').focus();
       return;
     }
 
     currentLinks = buildLinks(year, make, model, maxPrice);
+    const yearLabel  = year  || 'Any Year';
+    const makeLabel  = make  || 'Any Make';
+    const modelLabel = model || 'Any Model';
     const priceLabel = maxPrice ? ` — under $${parseInt(maxPrice).toLocaleString()}` : '';
-    document.getElementById('queryLabel').textContent = `${year} ${make} ${model}${priceLabel}`;
+    document.getElementById('queryLabel').textContent = `${yearLabel} ${makeLabel} ${modelLabel}${priceLabel}`;
 
     const grid = document.getElementById('sitesGrid');
     grid.innerHTML = '';
