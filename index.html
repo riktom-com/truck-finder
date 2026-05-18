@@ -70,11 +70,12 @@
     .search-card h2 { font-size: 1.05rem; margin-bottom: 1.25rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
     .fields {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
       gap: 1rem;
       margin-bottom: 1.25rem;
     }
-    @media (max-width: 600px) { .fields { grid-template-columns: 1fr; } }
+    @media (max-width: 750px) { .fields { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .fields { grid-template-columns: 1fr; } }
     .field label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.4rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
     .field select, .field input {
       width: 100%;
@@ -229,6 +230,23 @@
         <label for="model">Model</label>
         <input type="text" id="model" placeholder="e.g. F-150, Silverado" autocomplete="off">
       </div>
+      <div class="field">
+        <label for="maxprice">Max Price</label>
+        <select id="maxprice">
+          <option value="">Any Price</option>
+          <option value="10000">$10,000</option>
+          <option value="15000">$15,000</option>
+          <option value="20000">$20,000</option>
+          <option value="25000">$25,000</option>
+          <option value="30000">$30,000</option>
+          <option value="35000">$35,000</option>
+          <option value="40000">$40,000</option>
+          <option value="50000">$50,000</option>
+          <option value="60000">$60,000</option>
+          <option value="75000">$75,000</option>
+          <option value="100000">$100,000</option>
+        </select>
+      </div>
     </div>
     <button class="btn-search" id="searchBtn" onclick="doSearch()">Search All Sites →</button>
   </div>
@@ -280,87 +298,90 @@
 
   let currentLinks = [];
 
-  function buildLinks(year, make, model) {
+  function buildLinks(year, make, model, maxPrice) {
     const q = encodeURIComponent(`${year} ${make} ${model}`);
     const makeSlug = make.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
     const modelSlug = model.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    const p = maxPrice ? parseInt(maxPrice) : null;
 
     return [
       {
         name: 'AutoTrader',
         type: 'New & Used',
         icon: '🚗',
-        url: `https://www.autotrader.com/cars-for-sale/all-cars/${makeSlug}/${modelSlug}/?startYear=${year}&endYear=${year}`
+        url: `https://www.autotrader.com/cars-for-sale/all-cars/${makeSlug}/${modelSlug}/?startYear=${year}&endYear=${year}` + (p ? `&maxPrice=${p}` : '')
       },
       {
         name: 'Cars.com',
         type: 'New & Used',
         icon: '🔍',
-        url: `https://www.cars.com/shopping/results/?keyword=${q}&year_min=${year}&year_max=${year}`
+        url: `https://www.cars.com/shopping/results/?keyword=${q}&year_min=${year}&year_max=${year}` + (p ? `&price_max=${p}` : '')
       },
       {
         name: 'CarGurus',
         type: 'New & Used',
         icon: '📊',
-        url: `https://www.cargurus.com/Cars/new/nl_${makeSlug}_${modelSlug}#listing=searchResults;zip=31632;distance=200;selectedEntity=d2417;minYear=${year};maxYear=${year}`
+        url: `https://www.cargurus.com/Cars/new/nl_${makeSlug}_${modelSlug}#listing=searchResults;zip=31632;distance=200;selectedEntity=d2417;minYear=${year};maxYear=${year}` + (p ? `;maxPrice=${p}` : '')
       },
       {
         name: 'eBay Motors',
         type: 'Auction & Buy Now',
         icon: '🏷️',
-        url: `https://www.ebay.com/sch/Cars-Trucks/6001/i.html?_nkw=${q}&LH_ItemCondition=3000`
+        url: `https://www.ebay.com/sch/Cars-Trucks/6001/i.html?_nkw=${q}&LH_ItemCondition=3000` + (p ? `&_udhi=${p}` : '')
       },
       {
         name: 'CarMax',
         type: 'Used — Fixed Price',
         icon: '🏪',
-        url: `https://www.carmax.com/cars?keyword=${q}`
+        url: `https://www.carmax.com/cars?keyword=${q}` + (p ? `&maxPrice=${p}` : '')
       },
       {
         name: 'Carvana',
         type: 'Online Used',
         icon: '🌐',
-        url: `https://www.carvana.com/cars/${makeSlug}/${modelSlug}?year[]=${year}`
+        url: `https://www.carvana.com/cars/${makeSlug}/${modelSlug}?year[]=${year}` + (p ? `&price[max]=${p}` : '')
       },
       {
         name: 'TrueCar',
         type: 'New & Used',
         icon: '✅',
-        url: `https://www.truecar.com/used-cars-for-sale/listings/${makeSlug}/${modelSlug}/?year[]=${year}`
+        url: `https://www.truecar.com/used-cars-for-sale/listings/${makeSlug}/${modelSlug}/?year[]=${year}` + (p ? `&price_max=${p}` : '')
       },
       {
         name: 'Facebook Marketplace',
         type: 'Private Party',
         icon: '👥',
-        url: `https://www.facebook.com/marketplace/search/?query=${q}&exact=false`
+        url: `https://www.facebook.com/marketplace/search/?query=${q}&exact=false` + (p ? `&maxPrice=${p}` : '')
       },
       {
         name: 'Craigslist',
         type: 'Private Party',
         icon: '📋',
-        url: `https://www.craigslist.org/search/cta?query=${q}&auto_make_model=${encodeURIComponent(`${make} ${model}`)}&min_auto_year=${year}&max_auto_year=${year}`
+        url: `https://www.craigslist.org/search/cta?query=${q}&auto_make_model=${encodeURIComponent(`${make} ${model}`)}&min_auto_year=${year}&max_auto_year=${year}` + (p ? `&max_price=${p}` : '')
       },
       {
         name: 'Hemmings',
         type: 'Classic & Specialty',
         icon: '🏆',
-        url: `https://www.hemmings.com/search/?query=${q}`
+        url: `https://www.hemmings.com/search/?query=${q}` + (p ? `&price_to=${p}` : '')
       },
     ];
   }
 
   function doSearch() {
-    const year  = document.getElementById('year').value;
-    const make  = document.getElementById('make').value;
-    const model = document.getElementById('model').value.trim();
+    const year     = document.getElementById('year').value;
+    const make     = document.getElementById('make').value;
+    const model    = document.getElementById('model').value.trim();
+    const maxPrice = document.getElementById('maxprice').value;
 
     if (!model) {
       document.getElementById('model').focus();
       return;
     }
 
-    currentLinks = buildLinks(year, make, model);
-    document.getElementById('queryLabel').textContent = `${year} ${make} ${model}`;
+    currentLinks = buildLinks(year, make, model, maxPrice);
+    const priceLabel = maxPrice ? ` — under $${parseInt(maxPrice).toLocaleString()}` : '';
+    document.getElementById('queryLabel').textContent = `${year} ${make} ${model}${priceLabel}`;
 
     const grid = document.getElementById('sitesGrid');
     grid.innerHTML = '';
