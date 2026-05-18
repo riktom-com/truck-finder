@@ -390,17 +390,18 @@
     const model    = document.getElementById('model').value.trim();
     const maxPrice = document.getElementById('maxprice').value;
 
-    if (!year && !make && !model) {
-      document.getElementById('model').focus();
+    if (!year && !make && !model && !maxPrice) {
+      document.getElementById('maxprice').focus();
       return;
     }
 
     currentLinks = buildLinks(year, make, model, maxPrice);
     const yearLabel  = year  || 'Any Year';
     const makeLabel  = make  || 'Any Make';
-    const modelLabel = model || 'Any Model';
+    const modelLabel = model || '';
     const priceLabel = maxPrice ? ` — under $${parseInt(maxPrice).toLocaleString()}` : '';
-    document.getElementById('queryLabel').textContent = `${yearLabel} ${makeLabel} ${modelLabel}${priceLabel}`;
+    const queryLabel = [yearLabel, makeLabel, modelLabel].filter(Boolean).join(' ');
+    document.getElementById('queryLabel').textContent = `${queryLabel}${priceLabel}`;
 
     const grid = document.getElementById('sitesGrid');
     grid.innerHTML = '';
